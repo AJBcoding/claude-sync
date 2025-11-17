@@ -2,7 +2,7 @@
 import { FileHasher } from './hasher';
 import { SyncMetadata } from './metadata';
 import fg from 'fast-glob';
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'fs';
 import { join, relative, dirname } from 'path';
 
 export interface SyncResult {
@@ -69,5 +69,21 @@ export class SkillSyncer {
       mkdirSync(targetDir, { recursive: true });
     }
     copyFileSync(source, target);
+  }
+
+  ensureGitignore(repoPath: string): void {
+    const gitignorePath = join(repoPath, '.claude/.gitignore');
+    const metadataEntry = '.sync-metadata.json\n';
+
+    if (!existsSync(gitignorePath)) {
+      mkdirSync(dirname(gitignorePath), { recursive: true });
+      writeFileSync(gitignorePath, metadataEntry);
+      return;
+    }
+
+    const content = readFileSync(gitignorePath, 'utf-8');
+    if (!content.includes('.sync-metadata.json')) {
+      appendFileSync(gitignorePath, metadataEntry);
+    }
   }
 }

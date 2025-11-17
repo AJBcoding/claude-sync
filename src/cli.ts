@@ -132,87 +132,107 @@ function syncRepositories(
   const scanner = new PluginScanner();
 
   // Discover plugins
-  const plugins = scanner.findPlugins(configData.sources.pluginScanPath);
+  let plugins: any[] = [];
+  try {
+    plugins = scanner.findPlugins(configData.sources.pluginScanPath);
+  } catch (error) {
+    console.error(`⚠ Failed to scan plugins: ${error}`);
+  }
 
   for (const repoPath of repos) {
-    if (!options.quiet) {
-      console.log(`\nSyncing ${repoPath}...`);
-    }
-
-    const hasher = new FileHasher();
-    const metadataPath = join(repoPath, '.claude/.sync-metadata.json');
-    const metadata = new SyncMetadata(metadataPath);
-    const syncer = new SkillSyncer(hasher, metadata);
-
-    let totalCopied = 0;
-    let totalUpdated = 0;
-    let totalSkipped = 0;
-    const allSkippedFiles: string[] = [];
-
-    // Sync user skills
-    if (existsSync(configData.sources.userSkills)) {
-      const result = syncer.sync(
-        configData.sources.userSkills,
-        join(repoPath, '.claude/skills')
-      );
-      totalCopied += result.copied;
-      totalUpdated += result.updated;
-      totalSkipped += result.skipped;
-      allSkippedFiles.push(...result.skippedFiles);
-    }
-
-    // Sync plugin skills
-    for (const plugin of plugins) {
-      if (configData.sources.excludePlugins.includes(plugin.name)) {
+    try {
+      if (!existsSync(repoPath)) {
+        console.error(`✗ Repository not found: ${repoPath}`);
         continue;
       }
 
-      const result = syncer.sync(
-        plugin.skillsPath,
-        join(repoPath, '.claude/skills', plugin.name)
-      );
-      totalCopied += result.copied;
-      totalUpdated += result.updated;
-      totalSkipped += result.skipped;
-      allSkippedFiles.push(...result.skippedFiles.map(f => `${plugin.name}/${f}`));
-    }
+      if (!options.quiet) {
+        console.log(`\nSyncing ${repoPath}...`);
+      }
 
-    // Update last sync time
-    registry.updateLastSync(repoPath);
+      const hasher = new FileHasher();
+      const metadataPath = join(repoPath, '.claude/.sync-metadata.json');
+      const metadata = new SyncMetadata(metadataPath);
+      const syncer = new SkillSyncer(hasher, metadata);
 
-    // Stage files in git if repo is clean
-    const git = new GitHelper();
-    if (git.isGitRepo(repoPath)) {
-      if (git.isDetachedHead(repoPath)) {
-        if (!options.quiet) {
-          console.log('⚠ Repo in detached HEAD state - files updated but not staged');
+      // Ensure .gitignore exists
+      syncer.ensureGitignore(repoPath);
+
+      let totalCopied = 0;
+      let totalUpdated = 0;
+      let totalSkipped = 0;
+      const allSkippedFiles: string[] = [];
+
+      // Sync user skills
+      if (existsSync(configData.sources.userSkills)) {
+        const result = syncer.sync(
+          configData.sources.userSkills,
+          join(repoPath, '.claude/skills')
+        );
+        totalCopied += result.copied;
+        totalUpdated += result.updated;
+        totalSkipped += result.skipped;
+        allSkippedFiles.push(...result.skippedFiles);
+      }
+
+      // Sync plugin skills
+      for (const plugin of plugins) {
+        if (configData.sources.excludePlugins.includes(plugin.name)) {
+          continue;
         }
-      } else {
-        try {
-          git.stageFiles(repoPath, '.claude/skills');
-          if (options.verbose) {
-            console.log('  Staged changes in git');
+
+        const result = syncer.sync(
+          plugin.skillsPath,
+          join(repoPath, '.claude/skills', plugin.name)
+        );
+        totalCopied += result.copied;
+        totalUpdated += result.updated;
+        totalSkipped += result.skipped;
+        allSkippedFiles.push(...result.skippedFiles.map(f => `${plugin.name}/${f}`));
+      }
+
+      // Update last sync time
+      registry.updateLastSync(repoPath);
+
+      // Stage files in git if repo is clean
+      const git = new GitHelper();
+      if (git.isGitRepo(repoPath)) {
+        if (git.isDetachedHead(repoPath)) {
+          if (!options.quiet) {
+            console.log('⚠ Repo in detached HEAD state - files updated but not staged');
           }
-        } catch (error) {
-          console.error(`⚠ Failed to stage files: ${error}`);
+        } else {
+          try {
+            git.stageFiles(repoPath, '.claude/skills');
+            if (options.verbose) {
+              console.log('  Staged changes in git');
+            }
+          } catch (error) {
+            console.error(`⚠ Failed to stage files: ${error}`);
+          }
         }
       }
-    }
 
-    // Report results
-    if (!options.quiet) {
-      const total = totalCopied + totalUpdated;
-      console.log(`✓ Synced ${total} skills (${totalCopied} new, ${totalUpdated} updated)`);
+      // Report results
+      if (!options.quiet) {
+        const total = totalCopied + totalUpdated;
+        console.log(`✓ Synced ${total} skills (${totalCopied} new, ${totalUpdated} updated)`);
 
-      if (totalSkipped > 0) {
-        console.log(`⚠ Skipped ${totalSkipped} files (locally modified):`);
-        allSkippedFiles.forEach(f => console.log(`  - ${f}`));
+        if (totalSkipped > 0) {
+          console.log(`⚠ Skipped ${totalSkipped} files (locally modified):`);
+          allSkippedFiles.forEach(f => console.log(`  - ${f}`));
+        }
       }
-    }
 
-    if (options.verbose) {
-      console.log(`  User skills: ${configData.sources.userSkills}`);
-      console.log(`  Plugins: ${plugins.map(p => p.name).join(', ')}`);
+      if (options.verbose) {
+        console.log(`  User skills: ${configData.sources.userSkills}`);
+        console.log(`  Plugins: ${plugins.map(p => p.name).join(', ')}`);
+      }
+    } catch (error) {
+      console.error(`✗ Failed to sync ${repoPath}: ${error}`);
+      if (options.verbose) {
+        console.error(error);
+      }
     }
   }
 }
