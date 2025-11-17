@@ -101,6 +101,65 @@ Output:
 ✓ Registered /Users/you/projects/myapp
 ```
 
+### Register Multiple Existing Repositories
+
+If you have several existing projects and want to register them all, here's a systematic approach:
+
+**Step 1: Find all your git repositories**
+
+```bash
+find ~ -type d -name ".git" -maxdepth 5 2>/dev/null | sed 's/\/.git$//' | grep -v "/\."
+```
+
+This finds git repos in your home directory (up to 5 levels deep), excluding hidden directories and system repos.
+
+**Step 2: Review and filter the list**
+
+The command will show all repositories. Identify which ones you want to register for skills syncing.
+
+**Step 3: Register each repository**
+
+For each repository you want to register:
+
+```bash
+cd /path/to/repository
+claude-sync register
+claude-sync run
+```
+
+**Example interactive walkthrough:**
+
+```bash
+# Find all repos
+$ find ~/PycharmProjects -type d -name ".git" -maxdepth 3 2>/dev/null | sed 's/\/.git$//'
+/Users/you/PycharmProjects/myapp
+/Users/you/PycharmProjects/another-project
+/Users/you/PycharmProjects/demo
+
+# Register the ones you want
+$ cd /Users/you/PycharmProjects/myapp
+$ claude-sync register
+✓ Registered /Users/you/PycharmProjects/myapp
+
+$ claude-sync run
+Syncing /Users/you/PycharmProjects/myapp...
+✓ Synced 83 skills (83 new, 0 updated)
+
+$ cd /Users/you/PycharmProjects/another-project
+$ claude-sync register
+✓ Registered /Users/you/PycharmProjects/another-project
+
+$ claude-sync run
+Syncing /Users/you/PycharmProjects/another-project...
+✓ Synced 83 skills (83 new, 0 updated)
+```
+
+**Tips:**
+- Skip demo/test repositories that don't need skills
+- Skip system repositories (like `.nvm`, plugin caches)
+- After registering, skills will auto-sync when you `cd` into these directories
+- Use `claude-sync list` to see all registered repositories
+
 ### Check Registration Status
 
 Check if the current directory is registered:
