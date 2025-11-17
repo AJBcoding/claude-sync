@@ -1,10 +1,18 @@
 {
-  "name": "@claude/sync-skills",
+  "name": "claude-sync-skills",
   "version": "0.1.0",
   "description": "Automatic synchronization of Claude skills across project repositories",
   "main": "dist/index.js",
   "bin": {
     "claude-sync": "dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AJBcoding/claude-sync.git"
+  },
+  "homepage": "https://github.com/AJBcoding/claude-sync",
+  "bugs": {
+    "url": "https://github.com/AJBcoding/claude-sync/issues"
   },
   "scripts": {
     "build": "tsc",
