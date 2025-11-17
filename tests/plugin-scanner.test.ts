@@ -2,9 +2,10 @@
 import { PluginScanner } from '../src/plugin-scanner';
 import { mkdirSync, rmSync, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('PluginScanner', () => {
-  const testDir = '/tmp/claude-sync-test/plugins';
+  const testDir = join(tmpdir(), 'claude-sync-test-plugins');
 
   beforeEach(() => {
     if (existsSync(testDir)) {

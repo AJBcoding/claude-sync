@@ -2,9 +2,10 @@
 import { FileHasher } from '../src/hasher';
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('FileHasher', () => {
-  const testDir = '/tmp/claude-sync-test';
+  const testDir = join(tmpdir(), 'claude-sync-test-hasher');
   const hasher = new FileHasher();
 
   beforeEach(() => {

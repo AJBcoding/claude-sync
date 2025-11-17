@@ -24,8 +24,13 @@ export class Config {
     if (!existsSync(this.configPath)) {
       return this.createDefault();
     }
-    const data = readFileSync(this.configPath, 'utf-8');
-    return JSON.parse(data);
+    try {
+      const data = readFileSync(this.configPath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.warn(`Warning: Failed to parse config file at ${this.configPath}. Creating default config.`, error);
+      return this.createDefault();
+    }
   }
 
   save(config: SyncConfig): void {

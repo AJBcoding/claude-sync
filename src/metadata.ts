@@ -11,7 +11,12 @@ export class SyncMetadata {
 
   constructor(private metadataPath: string) {
     if (existsSync(metadataPath)) {
-      this.data = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+      try {
+        this.data = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+      } catch (error) {
+        console.warn(`Warning: Failed to parse metadata file at ${metadataPath}. Creating fresh metadata.`, error);
+        this.data = { files: {}, lastSync: new Date().toISOString() };
+      }
     } else {
       this.data = { files: {}, lastSync: new Date().toISOString() };
     }

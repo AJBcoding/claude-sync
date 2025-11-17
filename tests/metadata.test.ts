@@ -2,9 +2,10 @@
 import { SyncMetadata } from '../src/metadata';
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('SyncMetadata', () => {
-  const testDir = '/tmp/claude-sync-test';
+  const testDir = join(tmpdir(), 'claude-sync-test-metadata');
   const metadataPath = join(testDir, '.sync-metadata.json');
 
   beforeEach(() => {
